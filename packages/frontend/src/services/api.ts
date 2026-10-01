@@ -180,26 +180,7 @@ class ApiClient {
     return data;
   }
 
-  // Simulation
-  async getSimulationRoutes() {
-    const { data } = await this.client.get('/api/simulation/routes');
-    return data;
-  }
 
-  async startSimulation(routeId: string, deliveryId?: string, speed?: number) {
-    const { data } = await this.client.post('/api/simulation/start', { routeId, deliveryId, speed });
-    return data;
-  }
-
-  async stopSimulation() {
-    const { data } = await this.client.post('/api/simulation/stop');
-    return data;
-  }
-
-  async getSimulationStatus() {
-    const { data } = await this.client.get('/api/simulation/status');
-    return data;
-  }
 }
 
 export const api = new ApiClient();

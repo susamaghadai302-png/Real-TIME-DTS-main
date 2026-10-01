@@ -12,11 +12,9 @@ import { deliveriesRouter } from './routes/deliveries';
 import { driversRouter } from './routes/drivers';
 import { adminRouter } from './routes/admin';
 import { notificationsRouter } from './routes/notifications';
-import { simulationRouter } from './routes/simulation';
 import { setupSocketHandlers } from './sockets';
 import { prisma } from './db/client';
 import { createRateLimiter } from './middleware/rateLimiter';
-import { simulationService } from './services/simulationService';
 
 const PORT = parseInt(process.env.PORT || '4000', 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
@@ -61,7 +59,6 @@ app.use('/api/deliveries', deliveriesRouter);
 app.use('/api/drivers', driversRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/notifications', notificationsRouter);
-app.use('/api/simulation', simulationRouter);
 
 // 404 handler
 app.use((_req, res) => {
@@ -76,40 +73,6 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 
 // Setup Socket.IO handlers
 setupSocketHandlers(io);
-
-// Wire simulationService → Socket.IO
-// The simulationService fires location updates internally (setInterval).
-// Here we register a handler that persists each tick to the DB and broadcasts
-// it over Socket.IO exactly as a real driver location update would.
-simulationService.setLocationUpdateHandler(async (payload) => {
-  const { driverId, deliveryId, lat, lng, heading, speed, accuracy, timestamp } = payload;
-
-  // Persist to DB
-  try {
-    await Promise.all([
-      prisma.locationUpdate.create({
-        data: { driverId, deliveryId, lat, lng, heading, speed, accuracy },
-      }),
-      prisma.driver.update({
-        where: { id: driverId },
-        data:  { currentLat: lat, currentLng: lng, lastSeenAt: new Date(timestamp) },
-      }),
-    ]);
-  } catch (err) {
-    console.error('[Simulation] Failed to persist location update:', err);
-  }
-
-  const locationPayload = { driverId, deliveryId, lat, lng, heading, speed, accuracy, timestamp };
-
-  // Broadcast to delivery room
-  if (deliveryId) {
-    io.to(`delivery:${deliveryId}`).emit('driver:location', locationPayload);
-  }
-
-  // Broadcast to admin room
-  io.to('admin').emit('driver:location', locationPayload);
-});
-
 
 // Start server
 async function start() {

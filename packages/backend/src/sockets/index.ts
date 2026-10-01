@@ -3,7 +3,6 @@ import { prisma } from '../db/client';
 import { SOCKET_EVENTS, DeliveryStatus } from '@dts/shared';
 import { verifyToken } from '../middleware/auth';
 import { calculateETA } from '../services/etaService';
-import { simulationService } from '../services/simulationService';
 
 const THROTTLE_MS = parseInt(process.env.THROTTLE_LOCATION_MS || '2000');
 const driverLastUpdate = new Map<string, number>();

@@ -36,11 +36,6 @@ export const DriverDashboard: React.FC = () => {
   const {
     profile,
     fetchProfile,
-    isSimulating,
-    simulationRoutes,
-    fetchSimulationRoutes,
-    startSimulation,
-    stopSimulation,
     updateDriverStatus,
   } = useDriverStore();
 
@@ -48,7 +43,6 @@ export const DriverDashboard: React.FC = () => {
 
   const [activeDelivery, setActiveDelivery] = useState<Delivery | null>(null);
   const [completedDeliveries, setCompletedDeliveries] = useState<Delivery[]>([]);
-  const [selectedRouteId, setSelectedRouteId] = useState<string>('mumbai-1');
   const [useRealGPS, setUseRealGPS] = useState(false);
   const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number; heading?: number } | null>(null);
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -56,10 +50,9 @@ export const DriverDashboard: React.FC = () => {
 
   const watchIdRef = useRef<number | null>(null);
 
-  // Load driver profile, assigned deliveries & demo simulation routes
+  // Load driver profile, assigned deliveries
   const loadDriverData = async () => {
     await fetchProfile();
-    await fetchSimulationRoutes();
     try {
       const res = await api.getDeliveries({ pageSize: 50 });
       const items: Delivery[] = res.data?.items ?? [];
@@ -185,24 +178,6 @@ export const DriverDashboard: React.FC = () => {
       alert('Failed to advance delivery status.');
     } finally {
       setIsUpdatingStatus(false);
-    }
-  };
-
-  // Simulation Controls
-  const handleStartSim = async () => {
-    if (!selectedRouteId) return;
-    try {
-      await startSimulation(selectedRouteId, activeDelivery?.id);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleStopSim = async () => {
-    try {
-      await stopSimulation();
-    } catch (err) {
-      console.error(err);
     }
   };
 
@@ -462,12 +437,7 @@ export const DriverDashboard: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              {isSimulating ? (
-                <span className="badge-yellow flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
-                  <span>Simulation Active</span>
-                </span>
-              ) : useRealGPS ? (
+              {useRealGPS ? (
                 <span className="badge-green flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
                   <span>Real GPS Active</span>
@@ -486,63 +456,7 @@ export const DriverDashboard: React.FC = () => {
           )}
 
           {/* Mode Switchers */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-            {/* Simulation Mode Selector */}
-            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/40 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-xs text-amber-900">Demo Route Simulation</div>
-                  <div className="text-[11px] text-amber-700">Move driver along realistic waypoints</div>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded">
-                  Demo
-                </span>
-              </div>
-
-              <select
-                value={selectedRouteId}
-                disabled={isSimulating}
-                onChange={(e) => setSelectedRouteId(e.target.value)}
-                className="input text-xs py-1.5 bg-white"
-              >
-                {simulationRoutes.length > 0 ? (
-                  simulationRoutes.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="mumbai-1">Mumbai: Andheri → Bandra BKC</option>
-                    <option value="delhi-1">Delhi: Connaught Place → Lajpat Nagar</option>
-                    <option value="bangalore-1">Bangalore: Indiranagar → Koramangala</option>
-                    <option value="hyderabad-1">Hyderabad: Jubilee Hills → Hitech City</option>
-                    <option value="chennai-1">Chennai: T Nagar → Adyar</option>
-                  </>
-                )}
-              </select>
-
-              <div className="flex items-center gap-2">
-                {!isSimulating ? (
-                  <button
-                    onClick={handleStartSim}
-                    className="btn-primary text-xs bg-amber-600 hover:bg-amber-700 flex items-center gap-1.5 py-2 w-full justify-center"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-white" />
-                    <span>Start GPS Simulation</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleStopSim}
-                    className="btn-danger text-xs flex items-center gap-1.5 py-2 w-full justify-center"
-                  >
-                    <Square className="w-3.5 h-3.5 fill-white" />
-                    <span>Stop GPS Simulation</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 gap-4 pt-1">
             {/* Real Hardware GPS Switcher */}
             <div className="p-4 rounded-xl border border-indigo-100 bg-indigo-50/40 space-y-3 flex flex-col justify-between">
               <div>
