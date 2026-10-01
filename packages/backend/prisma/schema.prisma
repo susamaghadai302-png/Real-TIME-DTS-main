@@ -1,0 +1,138 @@
+// Prisma Schema for Real-Time Delivery Tracking System
+// Database: SQLite (dev) / PostgreSQL (prod)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         String   @default("CUSTOMER") // CUSTOMER | DRIVER | ADMIN
+  avatar       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  driver        Driver?
+  customer      Customer?
+  notifications Notification[]
+}
+
+model Driver {
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleType      String   @default("BIKE") // BIKE | SCOOTER | CAR | VAN
+  vehicleNumber    String
+  rating           Float    @default(5.0)
+  totalDeliveries  Int      @default(0)
+  totalEarnings    Float    @default(0)
+  status           String   @default("OFFLINE") // ONLINE | AVAILABLE | BUSY | OFFLINE
+  currentLat       Float?
+  currentLng       Float?
+  lastSeenAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  deliveries       Delivery[]
+  locationUpdates  LocationUpdate[]
+}
+
+model Customer {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultAddress String?
+  createdAt      DateTime @default(now())
+
+  deliveries     Delivery[]
+}
+
+model Address {
+  id      String  @id @default(uuid())
+  label   String?
+  street  String
+  city    String
+  state   String
+  lat     Float
+  lng     Float
+
+  pickupDeliveries      Delivery[] @relation("PickupAddress")
+  destinationDeliveries Delivery[] @relation("DestinationAddress")
+}
+
+model Delivery {
+  id                   String    @id @default(uuid())
+  trackingNumber       String    @unique
+  customerId           String
+  customer             Customer  @relation(fields: [customerId], references: [id])
+  driverId             String?
+  driver               Driver?   @relation(fields: [driverId], references: [id])
+  pickupAddressId      String
+  pickupAddress        Address   @relation("PickupAddress", fields: [pickupAddressId], references: [id])
+  destinationAddressId String
+  destinationAddress   Address   @relation("DestinationAddress", fields: [destinationAddressId], references: [id])
+  status               String    @default("ORDER_CREATED")
+  estimatedArrival     DateTime?
+  notes                String?
+  totalAmount          Float     @default(0)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  statusHistory  DeliveryStatusHistory[]
+  locationUpdates LocationUpdate[]
+
+  @@index([status])
+  @@index([customerId])
+  @@index([driverId])
+  @@index([trackingNumber])
+}
+
+model LocationUpdate {
+  id         String   @id @default(uuid())
+  driverId   String
+  driver     Driver   @relation(fields: [driverId], references: [id])
+  deliveryId String?
+  delivery   Delivery? @relation(fields: [deliveryId], references: [id])
+  lat        Float
+  lng        Float
+  heading    Float?
+  speed      Float?
+  accuracy   Float?
+  timestamp  DateTime @default(now())
+
+  @@index([driverId, timestamp])
+  @@index([deliveryId])
+}
+
+model DeliveryStatusHistory {
+  id         String   @id @default(uuid())
+  deliveryId String
+  delivery   Delivery @relation(fields: [deliveryId], references: [id])
+  status     String
+  timestamp  DateTime @default(now())
+  note       String?
+
+  @@index([deliveryId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}

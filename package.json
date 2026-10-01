@@ -1,0 +1,21 @@
+{
+  "name": "real-time-dts",
+  "version": "1.0.0",
+  "description": "Production-Ready Real-Time Delivery Tracking System",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/backend",
+    "packages/frontend"
+  ],
+  "scripts": {
+    "start": "lsof -ti :4000 | xargs kill -9 2>/dev/null; lsof -ti :5173 | xargs kill -9 2>/dev/null; npm run dev",
+    "dev": "npm run dev:backend & npm run dev:frontend",
+    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces --if-present",
+    "seed": "npm run seed --workspace=packages/backend",
+    "setup": "npm install && npm run seed"
+  }
+}
