@@ -88,7 +88,7 @@ export const DriverDashboard: React.FC = () => {
       setActiveDelivery(newDelivery);
     };
 
-    // Listen to self location echo (from simulation service)
+    // Listen to self location echo (from location service)
     const handleLocation = (payload: { lat: number; lng: number; heading?: number; driverId: string }) => {
       if (payload.driverId === profile.id) {
         setCurrentCoords({ lat: payload.lat, lng: payload.lng, heading: payload.heading });
